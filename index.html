@@ -378,7 +378,7 @@
                 try {
                     // Insert expense into Supabase database
                     const { data, error } = await supabase
-                        .from('expenses')
+                        .from('Expenses')
                         .insert([
                             {
                                 amount: amount,
@@ -407,7 +407,7 @@
             async loadExpensesFromDatabase() {
                 try {
                     const { data, error } = await supabase
-                        .from('expenses')
+                        .from('Expenses')
                         .select('*')
                         .order('date', { ascending: false });
 
@@ -606,3 +606,4 @@
     </script>
 </body>
 </html>
+image.png
