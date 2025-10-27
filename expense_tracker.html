@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: 300;
+        }
+
+        .input-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        .btn {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #555;
+        }
+
+        .btn-secondary {
+            background: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #888;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .category-card.expanded {
+            transform: scale(1.02);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .category-header {
+            padding: 20px;
+            background: #f8f8f8;
+            border-bottom: 1px solid #eee;
+        }
+
+        .category-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .category-total {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .category-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .category-card.expanded .category-details {
+            max-height: 300px;
+        }
+
+        .transaction-list {
+            padding: 15px;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .transaction-desc {
+            font-size: 14px;
+            color: #333;
+            margin-top: 2px;
+        }
+
+        .transaction-amount {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .efficiency-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 30px;
+        }
+
+        .efficiency-score {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .score-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .score-label {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .tips-section {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .tips-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .tip-item {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .tip-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #333;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .categories-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Expense Tracker</h1>
+        
+        <div class="input-section">
+            <form id="expenseForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="amount">Amount</label>
+                        <input type="number" id="amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" id="description" placeholder="What did you spend on?">
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn">Add Expense</button>
+                    <button type="button" class="btn btn-secondary" onclick="addCustomCategory()">Add Custom Category</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="categories-grid" id="categoriesGrid">
+            <!-- Categories will be dynamically generated here -->
+        </div>
+
+        <div class="efficiency-section">
+            <div class="efficiency-score">
+                <div class="score-value" id="efficiencyScore">0</div>
+                <div class="score-label">Efficiency Score</div>
+            </div>
+            <div class="tips-section">
+                <div class="tips-title">Financial Insights</div>
+                <div id="tipsList">
+                    <div class="tip-item">Add some expenses to get personalized insights</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Supabase configuration
+        const supabaseUrl = 'https://uebwuyjxzmnjxjzpqogw.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlYnd1eWp4em1uanhqenBxb2d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0ODM2MzcsImV4cCI6MjA3NzA1OTYzN30.ZT5PBg52UyQspwc6BAu6iqG2JTlFJuh0dx4U8-uRllU';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Default categories
+        const defaultCategories = [
+            'Food & Dining',
+            'Clothing & Accessories', 
+            'Emergency Fund',
+            'Regular Savings',
+            'Utilities & Bills',
+            'Transportation',
+            'Entertainment'
+        ];
+
+        // Initialize the application
+        class ExpenseTracker {
+            constructor() {
+                this.expenses = [];
+                this.categories = [...defaultCategories];
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.setDefaultDate();
+                this.populateCategorySelect();
+                this.loadExpensesFromDatabase();
+            }
+
+            setupEventListeners() {
+                document.getElementById('expenseForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.addExpense();
+                });
+            }
+
+            setDefaultDate() {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('date').value = today;
+            }
+
+            populateCategorySelect() {
+                const select = document.getElementById('category');
+                select.innerHTML = '<option value="">Select Category</option>';
+                
+                console.log('Categories to populate:', this.categories);
+                
+                this.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    select.appendChild(option);
+                });
+            }
+
+            async addExpense() {
+                const amount = parseFloat(document.getElementById('amount').value);
+                const category = document.getElementById('category').value;
+                const description = document.getElementById('description').value;
+                const date = document.getElementById('date').value;
+
+                if (!amount || !category || !date) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                try {
+                    // Insert expense into Supabase database
+                    const { data, error } = await supabase
+                        .from('expenses')
+                        .insert([
+                            {
+                                amount: amount,
+                                category: category,
+                                description: description || 'No description',
+                                date: date
+                            }
+                        ]);
+
+                    if (error) {
+                        console.error('Error adding expense:', error);
+                        alert('Error saving expense. Please try again.');
+                        return;
+                    }
+
+                    // Reload expenses from database and update UI
+                    await this.loadExpensesFromDatabase();
+                    this.clearForm();
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error saving expense. Please try again.');
+                }
+            }
+
+            async loadExpensesFromDatabase() {
+                try {
+                    const { data, error } = await supabase
+                        .from('expenses')
+                        .select('*')
+                        .order('date', { ascending: false });
+
+                    if (error) {
+                        console.error('Error loading expenses:', error);
+                        alert('Error loading expenses. Please refresh the page.');
+                        return;
+                    }
+
+                    this.expenses = data || [];
+                    this.renderCategories();
+                    this.updateEfficiencyScore();
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error loading expenses. Please refresh the page.');
+                }
+            }
+
+            addCustomCategory() {
+                const categoryName = prompt('Enter new category name:');
+                if (categoryName && !this.categories.includes(categoryName)) {
+                    this.categories.push(categoryName);
+                    this.populateCategorySelect();
+                }
+            }
+
+            getCurrentMonthExpenses() {
+                const currentDate = new Date();
+                const currentMonth = currentDate.getMonth();
+                const currentYear = currentDate.getFullYear();
+
+                return this.expenses.filter(expense => {
+                    const expenseDate = new Date(expense.date);
+                    return expenseDate.getMonth() === currentMonth && 
+                           expenseDate.getFullYear() === currentYear;
+                });
+            }
+
+            getCategoryTotal(category) {
+                const monthExpenses = this.getCurrentMonthExpenses();
+                return monthExpenses
+                    .filter(expense => expense.category === category)
+                    .reduce((total, expense) => total + expense.amount, 0);
+            }
+
+            getCategoryExpenses(category) {
+                const monthExpenses = this.getCurrentMonthExpenses();
+                return monthExpenses
+                    .filter(expense => expense.category === category)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+            }
+
+            renderCategories() {
+                const grid = document.getElementById('categoriesGrid');
+                grid.innerHTML = '';
+
+                this.categories.forEach(category => {
+                    const total = this.getCategoryTotal(category);
+                    const expenses = this.getCategoryExpenses(category);
+
+                    const card = document.createElement('div');
+                    card.className = 'category-card';
+                    card.innerHTML = `
+                        <div class="category-header">
+                            <div class="category-name">${category}</div>
+                            <div class="category-total">$${total.toFixed(2)}</div>
+                        </div>
+                        <div class="category-details">
+                            <div class="transaction-list">
+                                ${expenses.length > 0 ? 
+                                    expenses.map(expense => `
+                                        <div class="transaction-item">
+                                            <div class="transaction-info">
+                                                <div class="transaction-date">${expense.date}</div>
+                                                <div class="transaction-desc">${expense.description}</div>
+                                            </div>
+                                            <div class="transaction-amount">$${expense.amount.toFixed(2)}</div>
+                                        </div>
+                                    `).join('') :
+                                    '<div class="empty-state">No expenses this month</div>'
+                                }
+                            </div>
+                        </div>
+                    `;
+
+                    // Add scroll event listener for expansion
+                    card.addEventListener('wheel', (e) => {
+                        e.preventDefault();
+                        this.toggleCategoryExpansion(card);
+                    });
+
+                    grid.appendChild(card);
+                });
+            }
+
+            toggleCategoryExpansion(card) {
+                const isExpanded = card.classList.contains('expanded');
+                
+                // Remove expanded class from all cards
+                document.querySelectorAll('.category-card').forEach(c => {
+                    c.classList.remove('expanded');
+                });
+
+                // Add expanded class to current card if it wasn't expanded
+                if (!isExpanded) {
+                    card.classList.add('expanded');
+                }
+            }
+
+            updateEfficiencyScore() {
+                const monthExpenses = this.getCurrentMonthExpenses();
+                
+                if (monthExpenses.length === 0) {
+                    document.getElementById('efficiencyScore').textContent = '0';
+                    document.getElementById('tipsList').innerHTML = 
+                        '<div class="tip-item">Add some expenses to get personalized insights</div>';
+                    return;
+                }
+
+                const nonEssentialCategories = ['Clothing & Accessories', 'Entertainment'];
+                const savingsCategories = ['Emergency Fund', 'Regular Savings'];
+
+                const nonEssentialTotal = monthExpenses
+                    .filter(expense => nonEssentialCategories.includes(expense.category))
+                    .reduce((total, expense) => total + expense.amount, 0);
+
+                const savingsTotal = monthExpenses
+                    .filter(expense => savingsCategories.includes(expense.category))
+                    .reduce((total, expense) => total + expense.amount, 0);
+
+                const totalSpent = monthExpenses.reduce((total, expense) => total + expense.amount, 0);
+
+                let efficiencyScore = 0;
+                if (totalSpent > 0) {
+                    efficiencyScore = Math.round((savingsTotal / totalSpent) * 100);
+                }
+
+                document.getElementById('efficiencyScore').textContent = efficiencyScore;
+
+                // Generate personalized tips
+                const tips = this.generateTips(monthExpenses, efficiencyScore);
+                document.getElementById('tipsList').innerHTML = tips;
+            }
+
+            generateTips(expenses, efficiencyScore) {
+                const tips = [];
+                const categoryTotals = {};
+
+                // Calculate totals by category
+                expenses.forEach(expense => {
+                    categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
+                });
+
+                // Find highest spending category
+                const highestCategory = Object.keys(categoryTotals).reduce((a, b) => 
+                    categoryTotals[a] > categoryTotals[b] ? a : b
+                );
+
+                if (efficiencyScore < 20) {
+                    tips.push('Consider increasing your savings allocation');
+                }
+
+                if (highestCategory === 'Food & Dining' && categoryTotals[highestCategory] > 500) {
+                    tips.push('Food spending is high - consider meal planning');
+                }
+
+                if (highestCategory === 'Entertainment' && categoryTotals[highestCategory] > 300) {
+                    tips.push('Review entertainment subscriptions and activities');
+                }
+
+                if (categoryTotals['Emergency Fund'] === 0) {
+                    tips.push('Start building an emergency fund');
+                }
+
+                if (tips.length === 0) {
+                    tips.push('Your spending patterns look balanced');
+                }
+
+                return tips.map(tip => `<div class="tip-item">${tip}</div>`).join('');
+            }
+
+            clearForm() {
+                document.getElementById('expenseForm').reset();
+                this.setDefaultDate();
+            }
+        }
+
+        // Global function for adding custom categories
+        function addCustomCategory() {
+            expenseTracker.addCustomCategory();
+        }
+
+        // Initialize the application
+        const expenseTracker = new ExpenseTracker();
+    </script>
+</body>
+</html>
