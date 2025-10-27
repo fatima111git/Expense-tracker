@@ -171,6 +171,52 @@
             font-size: 14px;
         }
 
+        .custom-color-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+        }
+
+        .custom-color-label {
+            color: white;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .custom-color-input {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+        }
+
+        .custom-color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+            margin-right: 10px;
+            display: inline-block;
+        }
+
+        .apply-custom-theme {
+            background: #555;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .apply-custom-theme:hover {
+            background: #666;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -439,6 +485,16 @@
                     <div class="theme-color" style="background: linear-gradient(45deg, #065f46, #10b981);"></div>
                     <span class="theme-name">Green</span>
                 </div>
+            </div>
+
+            <div class="custom-color-section">
+                <div class="settings-title">Custom Color</div>
+                <label class="custom-color-label">Choose your own color:</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="custom-color-preview" id="customColorPreview" style="background: #3b82f6;"></div>
+                    <input type="color" id="customColorInput" class="custom-color-input" value="#3b82f6" onchange="updateCustomColorPreview()">
+                </div>
+                <button class="apply-custom-theme" onclick="applyCustomTheme()">Apply Custom Theme</button>
             </div>
         </div>
     </div>
@@ -875,7 +931,82 @@
         // Load saved theme on page load
         function loadSavedTheme() {
             const savedTheme = localStorage.getItem('selectedTheme') || 'default';
-            changeTheme(savedTheme);
+            if (savedTheme === 'custom') {
+                const customColor = localStorage.getItem('customThemeColor');
+                if (customColor) {
+                    applyCustomThemeFromSaved(customColor);
+                } else {
+                    changeTheme('default');
+                }
+            } else {
+                changeTheme(savedTheme);
+            }
+        }
+
+        // Custom color functionality
+        function updateCustomColorPreview() {
+            const colorInput = document.getElementById('customColorInput');
+            const preview = document.getElementById('customColorPreview');
+            preview.style.background = colorInput.value;
+        }
+
+        function applyCustomTheme() {
+            const colorInput = document.getElementById('customColorInput');
+            const customColor = colorInput.value;
+            
+            // Generate complementary colors for the custom theme
+            const root = document.documentElement;
+            
+            // Convert hex to RGB
+            const hex = customColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            // Create lighter and darker variations
+            const lightBg = `rgba(${r}, ${g}, ${b}, 0.1)`;
+            const cardBg = `rgba(${r}, ${g}, ${b}, 0.15)`;
+            const textColor = customColor;
+            
+            // Apply custom theme
+            root.style.setProperty('--bg-color', lightBg);
+            root.style.setProperty('--text-color', textColor);
+            root.style.setProperty('--card-bg', cardBg);
+            root.style.setProperty('--input-bg', '#ffffff');
+            
+            // Save custom theme
+            localStorage.setItem('selectedTheme', 'custom');
+            localStorage.setItem('customThemeColor', customColor);
+            
+            // Update theme selection
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.style.backgroundColor = '';
+            });
+        }
+
+        function applyCustomThemeFromSaved(customColor) {
+            const root = document.documentElement;
+            
+            // Convert hex to RGB
+            const hex = customColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            // Create lighter and darker variations
+            const lightBg = `rgba(${r}, ${g}, ${b}, 0.1)`;
+            const cardBg = `rgba(${r}, ${g}, ${b}, 0.15)`;
+            const textColor = customColor;
+            
+            // Apply custom theme
+            root.style.setProperty('--bg-color', lightBg);
+            root.style.setProperty('--text-color', textColor);
+            root.style.setProperty('--card-bg', cardBg);
+            root.style.setProperty('--input-bg', '#ffffff');
+            
+            // Update color picker
+            document.getElementById('customColorInput').value = customColor;
+            updateCustomColorPreview();
         }
 
         // Initialize the application
