@@ -654,8 +654,8 @@
                         <input type="number" id="amount" step="0.01" class="w-full p-2 border rounded" required>
                     </div>
                     <div class="form-group">
-                        <label for="category" class="block mb-2 text-sm font-medium">Category</label>
-                        <select id="category" class="w-full p-2 border rounded" required>
+                        <label for="category" class="block mb-2 text-sm font-medium">Category <span id="categoryRequired" class="text-red-500">*</span></label>
+                        <select id="category" class="w-full p-2 border rounded">
                             <option value="">Select Category</option>
                         </select>
                     </div>
@@ -907,6 +907,21 @@
                     e.preventDefault();
                     this.addExpense();
                 });
+                
+                // Toggle category requirement based on transaction type
+                document.getElementById('transactionType').addEventListener('change', (e) => {
+                    const categoryField = document.getElementById('category');
+                    const categoryRequired = document.getElementById('categoryRequired');
+                    
+                    if (e.target.value === 'income') {
+                        categoryField.removeAttribute('required');
+                        categoryRequired.style.display = 'none';
+                        categoryField.value = ''; // Clear category for income
+                    } else {
+                        categoryField.setAttribute('required', 'required');
+                        categoryRequired.style.display = 'inline';
+                    }
+                });
             }
 
             setDefaultDate() {
@@ -935,13 +950,19 @@
                 const date = document.getElementById('date').value;
                 const type = document.getElementById('transactionType').value || 'expense';
 
-                if (!amount || !category || !date) {
+                if (!amount || !date) {
                     showNotification('Please fill in all required fields', 'error');
                     return;
                 }
 
-                // Check budget overrun
-                if (type === 'expense' && localStorage.getItem('budgetAlerts') === 'true') {
+                // Category is required only for expenses
+                if (type === 'expense' && !category) {
+                    showNotification('Please select a category for expenses', 'error');
+                    return;
+                }
+
+                // Check budget overrun only for expenses
+                if (type === 'expense' && localStorage.getItem('budgetAlerts') === 'true' && category) {
                     const catBudget = budgets[category] || 0;
                     const catSpent = this.getCurrentMonthExpenses()
                         .filter(e => e.category === category && e.type !== 'income')
@@ -958,7 +979,7 @@
                         .insert([
                             {
                                 amount: amount,
-                                category: category,
+                                category: category || 'Income',
                                 description: description || 'No description',
                                 date: date,
                                 type: type
