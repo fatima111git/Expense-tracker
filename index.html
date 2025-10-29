@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Tracker</title>
+    <title>Personal Finance Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         * {
             margin: 0;
@@ -509,14 +515,23 @@
         </div>
         
         <ul class="sidebar-menu">
-            <li><a href="#" onclick="showSettings('theme')" class="active">
+            <li><a href="#" onclick="showSettings('appearance')" class="active">
                 <span class="menu-icon">🎨</span>
-                <span>Theme Colors</span>
+                <span>Appearance</span>
+            </a></li>
+            <li><a href="#" onclick="showSettings('data')">
+                <span class="menu-icon">💾</span>
+                <span>Data Management</span>
+            </a></li>
+            <li><a href="#" onclick="showSettings('security')">
+                <span class="menu-icon">🔒</span>
+                <span>Security</span>
             </a></li>
         </ul>
 
-        <div class="settings-section" id="theme-settings">
-            <div class="settings-title">Choose Theme</div>
+        <!-- Appearance Settings -->
+        <div class="settings-section" id="appearance-settings">
+            <div class="settings-title">Visual Themes</div>
             <div class="theme-options">
                 <div class="theme-option" onclick="changeTheme('default')">
                     <div class="theme-color" style="background: linear-gradient(45deg, #f5f5f5, #333);"></div>
@@ -545,44 +560,219 @@
                 </div>
                 <button class="apply-custom-theme" onclick="applyCustomTheme()">Apply Custom Theme</button>
             </div>
+
+            <div class="custom-color-section">
+                <div class="settings-title">Display Preferences</div>
+                <div style="margin-bottom: 15px;">
+                    <label class="custom-color-label">Currency:</label>
+                    <select id="currencySelect" class="w-full p-2 border rounded" style="background: #444; color: white; border: 1px solid #666;">
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="JPY">JPY (¥)</option>
+                        <option value="INR">INR (₹)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="custom-color-label">Date Format:</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                            <input type="radio" name="dateFormat" value="MM/DD/YYYY" checked>
+                            <span style="color: white;">MM/DD/YYYY</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                            <input type="radio" name="dateFormat" value="DD/MM/YYYY">
+                            <span style="color: white;">DD/MM/YYYY</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Management Settings -->
+        <div class="settings-section" id="data-settings" style="display: none;">
+            <div class="settings-title">Data Management</div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="exportData()" class="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm">
+                    Export Data (CSV)
+                </button>
+                <button onclick="openImportModal()" class="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm">
+                    Import Transactions (JSON)
+                </button>
+                <button onclick="confirmResetData()" class="w-full p-2 bg-red-600 text-white rounded hover:bg-red-700 transition text-sm">
+                    Reset All Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="settings-section" id="security-settings" style="display: none;">
+            <div class="settings-title">Alerts & Security</div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer;">
+                    <span>Enable Budget Overrun Alerts</span>
+                    <input type="checkbox" id="budgetAlertsToggle" style="width: 20px; height: 20px;">
+                </label>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer;">
+                    <span>Security Lock (PIN)</span>
+                    <input type="checkbox" id="pinLockToggle" style="width: 20px; height: 20px;">
+                </label>
+                <div id="pinSetupSection" style="display: none; margin-top: 10px;">
+                    <input type="password" id="pinSetupInput" maxlength="4" placeholder="Set 4-digit PIN" class="w-full p-2 rounded" style="background: #444; color: white; border: 1px solid #666;">
+                    <button onclick="savePIN()" class="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm mt-2">Save PIN</button>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: white; font-size: 12px;">Database Status:</span>
+                    <span id="dbStatus" class="px-2 py-1 rounded text-xs" style="background: #10b981; color: white;">Connected</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Main Content -->
     <div class="main-content" id="main-content">
         <div class="container">
-        <h1>Expense Tracker</h1>
+        <h1 class="text-3xl font-light mb-8 text-center">Personal Finance Dashboard</h1>
         
-        <div class="input-section">
-            <form id="expenseForm">
-                <div class="form-row">
+        <!-- Transaction Input Form -->
+        <div class="input-section mb-8">
+            <form id="expenseForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div class="form-group">
-                        <label for="amount">Amount</label>
-                        <input type="number" id="amount" step="0.01" required>
+                        <label for="transactionType" class="block mb-2 text-sm font-medium">Type</label>
+                        <select id="transactionType" class="w-full p-2 border rounded" required>
+                            <option value="expense">Expense</option>
+                            <option value="income">Income</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label for="category">Category</label>
-                        <select id="category" required>
+                        <label for="amount" class="block mb-2 text-sm font-medium">Amount</label>
+                        <input type="number" id="amount" step="0.01" class="w-full p-2 border rounded" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category" class="block mb-2 text-sm font-medium">Category</label>
+                        <select id="category" class="w-full p-2 border rounded" required>
                             <option value="">Select Category</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="description">Description</label>
-                        <input type="text" id="description" placeholder="What did you spend on?">
+                        <label for="description" class="block mb-2 text-sm font-medium">Description</label>
+                        <input type="text" id="description" placeholder="Transaction details" class="w-full p-2 border rounded">
                     </div>
                     <div class="form-group">
-                        <label for="date">Date</label>
-                        <input type="date" id="date" required>
+                        <label for="date" class="block mb-2 text-sm font-medium">Date</label>
+                        <input type="date" id="date" class="w-full p-2 border rounded" required>
                     </div>
                 </div>
-                <div class="form-row">
-                    <button type="submit" class="btn">Add Expense</button>
-                    <button type="button" class="btn btn-secondary" onclick="addCustomCategory()">Add Custom Category</button>
+                <div class="flex gap-4">
+                    <button type="submit" class="px-6 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition">Add Transaction</button>
+                    <button type="button" class="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-500 transition" onclick="addCustomCategory()">Add Custom Category</button>
                 </div>
             </form>
         </div>
 
-        <div class="categories-grid" id="categoriesGrid">
+        <!-- Monthly Budgeting Module -->
+        <div id="budgetModule" class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold">Monthly Budget</h2>
+                <button onclick="openBudgetModal()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                    Set Budget
+                </button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="flex justify-center items-center relative" style="height: 250px;">
+                    <canvas id="budgetChart" width="200" height="200"></canvas>
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div class="text-center">
+                            <div id="remainingBudget" class="text-3xl font-bold">$0</div>
+                            <div class="text-sm text-gray-600">Remaining</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="categoryBudgets" class="space-y-3">
+                    <!-- Category budget progress bars will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Goal Tracker -->
+        <div id="goalTracker" class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold">Financial Goals</h2>
+                <button onclick="openGoalModal()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                    Add Goal
+                </button>
+            </div>
+            <div id="goalsList" class="space-y-4">
+                <!-- Goals will be generated here -->
+            </div>
+        </div>
+
+        <!-- Transaction History Panel -->
+        <div id="transactionHistory" class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-6">Transaction History</h2>
+            
+            <!-- Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <input type="text" id="searchInput" placeholder="Search descriptions..." class="p-2 border rounded">
+                <select id="categoryFilter" class="p-2 border rounded">
+                    <option value="">All Categories</option>
+                </select>
+                <select id="dateRangeFilter" class="p-2 border rounded">
+                    <option value="all">All Time</option>
+                    <option value="7days">Last 7 Days</option>
+                    <option value="30days">Last 30 Days</option>
+                    <option value="currentMonth">Current Month</option>
+                </select>
+                <select id="typeFilter" class="p-2 border rounded">
+                    <option value="all">All Types</option>
+                    <option value="expense">Expenses Only</option>
+                    <option value="income">Income Only</option>
+                </select>
+            </div>
+
+            <!-- Net Flow Summary -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <div class="text-sm text-gray-600">Total Income</div>
+                    <div id="totalIncome" class="text-2xl font-bold text-green-600">$0.00</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-600">Total Expenses</div>
+                    <div id="totalExpenses" class="text-2xl font-bold text-red-600">$0.00</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-600">Net Flow</div>
+                    <div id="netFlow" class="text-2xl font-bold">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Transaction Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="p-3 text-left border-b">Date</th>
+                            <th class="p-3 text-left border-b">Category</th>
+                            <th class="p-3 text-left border-b">Description</th>
+                            <th class="p-3 text-left border-b">Type</th>
+                            <th class="p-3 text-right border-b">Amount</th>
+                            <th class="p-3 text-center border-b">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody">
+                        <!-- Transactions will be generated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Old Categories Grid (keeping for now, can be hidden later) -->
+        <div class="categories-grid" id="categoriesGrid" style="display: none;">
             <!-- Categories will be dynamically generated here -->
         </div>
 
@@ -598,6 +788,82 @@
                 </div>
             </div>
         </div>
+        </div>
+    </div>
+
+    <!-- Budget Modal -->
+    <div id="budgetModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-semibold mb-4">Set Monthly Budget</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Total Monthly Budget</label>
+                    <input type="number" id="totalBudgetInput" step="0.01" class="w-full p-2 border rounded" placeholder="0.00">
+                </div>
+                <div id="categoryBudgetInputs" class="space-y-2">
+                    <!-- Category budget inputs will be generated here -->
+                </div>
+                <div class="flex gap-4 mt-6">
+                    <button onclick="saveBudget()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+                    <button onclick="closeBudgetModal()" class="flex-1 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goal Modal -->
+    <div id="goalModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-semibold mb-4">Add Financial Goal</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Goal Name</label>
+                    <input type="text" id="goalNameInput" class="w-full p-2 border rounded" placeholder="e.g., Emergency Fund">
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Target Amount</label>
+                    <input type="number" id="goalTargetInput" step="0.01" class="w-full p-2 border rounded" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium">Current Saved Amount</label>
+                    <input type="number" id="goalCurrentInput" step="0.01" class="w-full p-2 border rounded" value="0.00">
+                </div>
+                <div class="flex gap-4 mt-6">
+                    <button onclick="saveGoal()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Save</button>
+                    <button onclick="closeGoalModal()" class="flex-1 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-semibold mb-4" id="confirmTitle">Confirm Action</h3>
+            <p class="mb-6" id="confirmMessage">Are you sure?</p>
+            <div class="flex gap-4">
+                <button onclick="confirmAction()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Confirm</button>
+                <button onclick="cancelAction()" class="flex-1 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIN Lock Overlay -->
+    <div id="pinOverlay" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4">
+            <h3 class="text-xl font-semibold mb-4 text-center">Enter PIN</h3>
+            <input type="password" id="pinInput" maxlength="4" class="w-full p-3 border rounded text-center text-2xl tracking-widest mb-4" placeholder="0000">
+            <button onclick="unlockApp()" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Unlock</button>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="fixed top-4 right-4 hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg p-4 border-l-4" id="toastContent">
+            <div class="flex items-center gap-3">
+                <span id="toastIcon"></span>
+                <span id="toastMessage"></span>
+            </div>
         </div>
     </div>
 
@@ -667,10 +933,22 @@
                 const category = document.getElementById('category').value;
                 const description = document.getElementById('description').value;
                 const date = document.getElementById('date').value;
+                const type = document.getElementById('transactionType').value || 'expense';
 
                 if (!amount || !category || !date) {
-                    alert('Please fill in all required fields');
+                    showNotification('Please fill in all required fields', 'error');
                     return;
+                }
+
+                // Check budget overrun
+                if (type === 'expense' && localStorage.getItem('budgetAlerts') === 'true') {
+                    const catBudget = budgets[category] || 0;
+                    const catSpent = this.getCurrentMonthExpenses()
+                        .filter(e => e.category === category && e.type !== 'income')
+                        .reduce((sum, e) => sum + e.amount, 0);
+                    if (catBudget > 0 && (catSpent + amount) > catBudget) {
+                        showNotification(`Warning: This expense will exceed your ${category} budget!`, 'warning');
+                    }
                 }
 
                 try {
@@ -682,24 +960,34 @@
                                 amount: amount,
                                 category: category,
                                 description: description || 'No description',
-                                date: date
+                                date: date,
+                                type: type
                             }
                         ]);
 
                     if (error) {
                         console.error('Error adding expense:', error);
-                        alert('Error saving expense. Please try again.');
+                        showNotification('Error saving transaction. Please try again.', 'error');
                         return;
                     }
 
                     // Reload expenses from database and update UI
                     await this.loadExpensesFromDatabase();
                     this.clearForm();
+                    renderTransactionTable();
+                    updateBudgetDisplay();
+                    showNotification('Transaction added successfully', 'success');
                     
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('Error saving expense. Please try again.');
+                    showNotification('Error saving transaction. Please try again.', 'error');
                 }
+            }
+
+            async saveExpenses() {
+                // Expenses are saved directly to Supabase in addExpense
+                // This method is kept for compatibility
+                return Promise.resolve();
             }
 
             async loadExpensesFromDatabase() {
@@ -711,17 +999,19 @@
 
                     if (error) {
                         console.error('Error loading expenses:', error);
-                        alert('Error loading expenses. Please refresh the page.');
+                        showNotification('Error loading expenses. Please refresh the page.', 'error');
                         return;
                     }
 
                     this.expenses = data || [];
-                    this.renderCategories();
+                    // Update all UI components
+                    if (typeof renderTransactionTable === 'function') renderTransactionTable();
+                    if (typeof updateBudgetDisplay === 'function') updateBudgetDisplay();
                     this.updateEfficiencyScore();
                     
                 } catch (error) {
                     console.error('Error:', error);
-                    alert('Error loading expenses. Please refresh the page.');
+                    showNotification('Error loading expenses. Please refresh the page.', 'error');
                 }
             }
 
@@ -1058,11 +1348,498 @@
             updateCustomColorPreview();
         }
 
-        // Initialize the application
+        // Global state
+        let budgets = {};
+        let goals = [];
+        let budgetChart = null;
+        let confirmCallback = null;
+        let currencySymbol = '$';
+        let dateFormat = 'MM/DD/YYYY';
+
+        // Budget Management
+        function openBudgetModal() {
+            document.getElementById('budgetModal').classList.remove('hidden');
+            populateCategoryBudgetInputs();
+        }
+
+        function closeBudgetModal() {
+            document.getElementById('budgetModal').classList.add('hidden');
+        }
+
+        function populateCategoryBudgetInputs() {
+            const container = document.getElementById('categoryBudgetInputs');
+            container.innerHTML = '';
+            expenseTracker.categories.forEach(cat => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block mb-1 text-sm">${cat} Budget:</label>
+                    <input type="number" id="budget_${cat}" step="0.01" class="w-full p-2 border rounded" 
+                           value="${budgets[cat] || ''}" placeholder="0.00">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function saveBudget() {
+            const totalBudget = parseFloat(document.getElementById('totalBudgetInput').value);
+            if (!totalBudget) {
+                showNotification('Please enter a total budget', 'error');
+                return;
+            }
+
+            budgets.total = totalBudget;
+            expenseTracker.categories.forEach(cat => {
+                const budgetValue = parseFloat(document.getElementById(`budget_${cat}`).value);
+                if (budgetValue) budgets[cat] = budgetValue;
+            });
+
+            // Save to Supabase (would need a budgets table)
+            localStorage.setItem('budgets', JSON.stringify(budgets));
+            updateBudgetDisplay();
+            closeBudgetModal();
+            showNotification('Budget saved successfully', 'success');
+        }
+
+        function updateBudgetDisplay() {
+            const currentMonthExpenses = expenseTracker.getCurrentMonthExpenses();
+            const totalSpent = currentMonthExpenses
+                .filter(e => e.type !== 'income')
+                .reduce((sum, e) => sum + e.amount, 0);
+            const totalBudget = budgets.total || 0;
+            const remaining = totalBudget - totalSpent;
+            const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+            document.getElementById('remainingBudget').textContent = formatCurrency(remaining);
+
+            // Update chart
+            if (budgetChart) budgetChart.destroy();
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            budgetChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [totalSpent, Math.max(0, remaining)],
+                        backgroundColor: ['#ef4444', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // Update category budgets
+            updateCategoryBudgets();
+        }
+
+        function updateCategoryBudgets() {
+            const container = document.getElementById('categoryBudgets');
+            container.innerHTML = '';
+            expenseTracker.categories.forEach(cat => {
+                const catBudget = budgets[cat] || 0;
+                const catSpent = expenseTracker.getCurrentMonthExpenses()
+                    .filter(e => e.category === cat && e.type !== 'income')
+                    .reduce((sum, e) => sum + e.amount, 0);
+                
+                if (catBudget > 0) {
+                    const percentage = (catSpent / catBudget) * 100;
+                    let color = '#10b981';
+                    if (percentage > 100) color = '#ef4444';
+                    else if (percentage > 75) color = '#f59e0b';
+
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>${cat}</span>
+                            <span>${formatCurrency(catSpent)} / ${formatCurrency(catBudget)}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full" style="width: ${Math.min(percentage, 100)}%; background: ${color};"></div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+            });
+        }
+
+        // Goal Management
+        function openGoalModal() {
+            document.getElementById('goalModal').classList.remove('hidden');
+            document.getElementById('goalNameInput').value = '';
+            document.getElementById('goalTargetInput').value = '';
+            document.getElementById('goalCurrentInput').value = '0.00';
+        }
+
+        function closeGoalModal() {
+            document.getElementById('goalModal').classList.add('hidden');
+        }
+
+        function saveGoal() {
+            const name = document.getElementById('goalNameInput').value;
+            const target = parseFloat(document.getElementById('goalTargetInput').value);
+            const current = parseFloat(document.getElementById('goalCurrentInput').value);
+
+            if (!name || !target) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+
+            goals.push({ id: Date.now(), name, target, current });
+            localStorage.setItem('goals', JSON.stringify(goals));
+            renderGoals();
+            closeGoalModal();
+            showNotification('Goal added successfully', 'success');
+        }
+
+        function renderGoals() {
+            const container = document.getElementById('goalsList');
+            container.innerHTML = '';
+            goals.forEach(goal => {
+                const percentage = (goal.current / goal.target) * 100;
+                const div = document.createElement('div');
+                div.className = 'border rounded-lg p-4';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-semibold">${goal.name}</h3>
+                        <button onclick="deleteGoal(${goal.id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </div>
+                    <div class="mb-2">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>${formatCurrency(goal.current)} / ${formatCurrency(goal.target)}</span>
+                            <span>${percentage.toFixed(1)}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-green-600 h-3 rounded-full" style="width: ${Math.min(percentage, 100)}%;"></div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteGoal(id) {
+            goals = goals.filter(g => g.id !== id);
+            localStorage.setItem('goals', JSON.stringify(goals));
+            renderGoals();
+        }
+
+        // Transaction History
+        function renderTransactionTable() {
+            const tbody = document.getElementById('transactionTableBody');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const dateRange = document.getElementById('dateRangeFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+
+            let filtered = expenseTracker.expenses.filter(exp => {
+                if (searchTerm && !exp.description.toLowerCase().includes(searchTerm)) return false;
+                if (categoryFilter && exp.category !== categoryFilter) return false;
+                if (typeFilter !== 'all' && exp.type !== typeFilter) return false;
+                
+                if (dateRange !== 'all') {
+                    const expDate = new Date(exp.date);
+                    const now = new Date();
+                    if (dateRange === '7days') {
+                        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        if (expDate < weekAgo) return false;
+                    } else if (dateRange === '30days') {
+                        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        if (expDate < monthAgo) return false;
+                    } else if (dateRange === 'currentMonth') {
+                        if (expDate.getMonth() !== now.getMonth() || expDate.getFullYear() !== now.getFullYear()) return false;
+                    }
+                }
+                return true;
+            });
+
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            tbody.innerHTML = '';
+            filtered.forEach(exp => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                const formattedDate = formatDate(exp.date);
+                const isIncome = exp.type === 'income';
+                row.innerHTML = `
+                    <td class="p-3">${formattedDate}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-xs" style="background: #e0e0e0;">${exp.category}</span></td>
+                    <td class="p-3">${exp.description}</td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-xs ${isIncome ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${exp.type}</span></td>
+                    <td class="p-3 text-right font-semibold ${isIncome ? 'text-green-600' : 'text-red-600'}">${isIncome ? '+' : '-'}${formatCurrency(exp.amount)}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="editTransaction(${exp.id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteTransaction(${exp.id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateNetFlowSummary(filtered);
+        }
+
+        function updateNetFlowSummary(transactions) {
+            const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            const netFlow = totalIncome - totalExpenses;
+
+            document.getElementById('totalIncome').textContent = formatCurrency(totalIncome);
+            document.getElementById('totalExpenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('netFlow').textContent = formatCurrency(netFlow);
+            document.getElementById('netFlow').className = `text-2xl font-bold ${netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`;
+        }
+
+        async function deleteTransaction(id) {
+            if (confirm('Are you sure you want to delete this transaction?')) {
+                expenseTracker.expenses = expenseTracker.expenses.filter(e => e.id !== id);
+                // Delete from Supabase
+                await supabase.from('Expenses').delete().eq('id', id);
+                await expenseTracker.loadExpensesFromDatabase();
+                renderTransactionTable();
+                updateBudgetDisplay();
+                showNotification('Transaction deleted successfully', 'success');
+            }
+        }
+
+        function editTransaction(id) {
+            const exp = expenseTracker.expenses.find(e => e.id === id);
+            if (exp) {
+                document.getElementById('transactionType').value = exp.type || 'expense';
+                document.getElementById('amount').value = exp.amount;
+                document.getElementById('category').value = exp.category;
+                document.getElementById('description').value = exp.description;
+                document.getElementById('date').value = exp.date;
+                deleteTransaction(id);
+            }
+        }
+
+        // Data Management
+        function exportData() {
+            const csv = [
+                ['Date', 'Category', 'Description', 'Type', 'Amount'].join(','),
+                ...expenseTracker.expenses.map(e => [
+                    e.date,
+                    e.category,
+                    `"${e.description}"`,
+                    e.type || 'expense',
+                    e.amount
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            showNotification('Data exported successfully', 'success');
+        }
+
+        function openImportModal() {
+            confirmActionWithCallback('Import Transactions', 'This will add transactions from a JSON file. Continue?', async () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+                    if (Array.isArray(data)) {
+                        data.forEach(item => {
+                            expenseTracker.expenses.push({
+                                ...item,
+                                id: item.id || Date.now() + Math.random()
+                            });
+                        });
+                        await expenseTracker.saveExpenses();
+                        await expenseTracker.loadExpensesFromDatabase();
+                        renderTransactionTable();
+                        showNotification('Data imported successfully', 'success');
+                    }
+                };
+                input.click();
+            });
+        }
+
+        function confirmResetData() {
+            confirmActionWithCallback('Reset All Data', 'This will permanently delete all your transactions. This cannot be undone. Are you absolutely sure?', async () => {
+                expenseTracker.expenses = [];
+                budgets = {};
+                goals = [];
+                // Delete from Supabase
+                await supabase.from('Expenses').delete().neq('id', 0);
+                localStorage.removeItem('budgets');
+                localStorage.removeItem('goals');
+                await expenseTracker.loadExpensesFromDatabase();
+                renderTransactionTable();
+                updateBudgetDisplay();
+                renderGoals();
+                showNotification('All data has been reset', 'success');
+            });
+        }
+
+        // Settings
+        function showSettings(section) {
+            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+            event.target.closest('a').classList.add('active');
+            document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
+            document.getElementById(`${section}-settings`).style.display = 'block';
+        }
+
+        // PIN Security
+        function savePIN() {
+            const pin = document.getElementById('pinSetupInput').value;
+            if (pin.length !== 4) {
+                showNotification('PIN must be 4 digits', 'error');
+                return;
+            }
+            localStorage.setItem('appPIN', pin);
+            showNotification('PIN saved successfully', 'success');
+            document.getElementById('pinSetupSection').style.display = 'none';
+        }
+
+        function unlockApp() {
+            const enteredPIN = document.getElementById('pinInput').value;
+            const savedPIN = localStorage.getItem('appPIN');
+            if (enteredPIN === savedPIN) {
+                document.getElementById('pinOverlay').classList.add('hidden');
+                document.getElementById('pinInput').value = '';
+            } else {
+                showNotification('Incorrect PIN', 'error');
+            }
+        }
+
+        // Notifications
+        function showNotification(message, type = 'info') {
+            const toast = document.getElementById('notificationToast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+            const content = document.getElementById('toastContent');
+
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+
+            const colors = {
+                success: 'border-green-500',
+                error: 'border-red-500',
+                warning: 'border-yellow-500',
+                info: 'border-blue-500'
+            };
+
+            icon.textContent = icons[type] || icons.info;
+            msg.textContent = message;
+            content.className = `bg-white rounded-lg shadow-lg p-4 border-l-4 ${colors[type]}`;
+            toast.classList.remove('hidden');
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Modal helpers
+        function confirmActionWithCallback(title, message, callback) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmModal').classList.remove('hidden');
+            confirmCallback = callback;
+        }
+
+        function confirmAction() {
+            if (confirmCallback) confirmCallback();
+            cancelAction();
+        }
+
+        function cancelAction() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        // Formatting helpers
+        function formatCurrency(amount) {
+            const symbols = { USD: '$', EUR: '€', GBP: '£', JPY: '¥', INR: '₹' };
+            const currency = localStorage.getItem('currency') || 'USD';
+            return `${symbols[currency] || '$'}${amount.toFixed(2)}`;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const format = localStorage.getItem('dateFormat') || 'MM/DD/YYYY';
+            if (format === 'DD/MM/YYYY') {
+                return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+            }
+            return `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}/${date.getFullYear()}`;
+        }
+
+        // Initialize
         const expenseTracker = new ExpenseTracker();
-        
-        // Load saved theme
         loadSavedTheme();
+
+        // Load budgets and goals
+        const savedBudgets = localStorage.getItem('budgets');
+        if (savedBudgets) budgets = JSON.parse(savedBudgets);
+        const savedGoals = localStorage.getItem('goals');
+        if (savedGoals) goals = JSON.parse(savedGoals);
+
+        // Setup event listeners
+        document.getElementById('currencySelect').addEventListener('change', (e) => {
+            localStorage.setItem('currency', e.target.value);
+            renderTransactionTable();
+            updateBudgetDisplay();
+        });
+
+        document.querySelectorAll('input[name="dateFormat"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                localStorage.setItem('dateFormat', e.target.value);
+                renderTransactionTable();
+            });
+        });
+
+        document.getElementById('budgetAlertsToggle').addEventListener('change', (e) => {
+            localStorage.setItem('budgetAlerts', e.target.checked);
+        });
+
+        document.getElementById('pinLockToggle').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                document.getElementById('pinSetupSection').style.display = 'block';
+            } else {
+                document.getElementById('pinSetupSection').style.display = 'none';
+                localStorage.removeItem('appPIN');
+            }
+        });
+
+        document.getElementById('searchInput').addEventListener('input', renderTransactionTable);
+        document.getElementById('categoryFilter').addEventListener('change', () => {
+            expenseTracker.populateCategorySelect();
+            renderTransactionTable();
+        });
+        document.getElementById('dateRangeFilter').addEventListener('change', renderTransactionTable);
+        document.getElementById('typeFilter').addEventListener('change', renderTransactionTable);
+
+        // Check PIN lock on load
+        if (localStorage.getItem('appPIN')) {
+            document.getElementById('pinOverlay').classList.remove('hidden');
+        }
+
+        // Initialize displays
+        setTimeout(() => {
+            renderTransactionTable();
+            renderGoals();
+            updateBudgetDisplay();
+            expenseTracker.populateCategorySelect();
+            
+            // Populate category filter
+            const catFilter = document.getElementById('categoryFilter');
+            expenseTracker.categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                catFilter.appendChild(option);
+            });
+        }, 1000);
     </script>
 </body>
 </html>
