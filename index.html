@@ -50,11 +50,38 @@
             transition: width 0.3s ease, padding 0.3s ease;
             z-index: 1000;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .sidebar.expanded {
-            width: 250px;
+            width: 280px;
             padding: 20px;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 5px;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 3px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: #666;
         }
 
         .sidebar-header {
@@ -155,11 +182,30 @@
         .menu-icon {
             width: 20px;
             height: 20px;
-            margin-right: 10px;
+            margin-right: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #aaa;
+        }
+
+        .sidebar-menu a {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .settings-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #444;
+        }
+
+        .settings-section:first-of-type {
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
         }
 
         .main-content {
@@ -169,7 +215,17 @@
         }
 
         .main-content.sidebar-expanded {
-            margin-left: 250px;
+            margin-left: 280px;
+        }
+
+        .settings-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #aaa;
         }
 
 
@@ -181,13 +237,6 @@
 
         .sidebar.expanded .settings-section {
             opacity: 1;
-        }
-
-        .settings-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: white;
         }
 
         .theme-options {
@@ -257,15 +306,86 @@
             background: #555;
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
+            padding: 10px 20px;
+            border-radius: 6px;
             cursor: pointer;
             margin-top: 10px;
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            width: 100%;
+            transition: background 0.2s;
         }
 
         .apply-custom-theme:hover {
             background: #666;
+        }
+
+        .settings-button {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .settings-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .settings-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .settings-toggle:last-child {
+            border-bottom: none;
+        }
+
+        .settings-toggle label {
+            color: white;
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .settings-toggle input[type="checkbox"] {
+            width: 44px;
+            height: 24px;
+            cursor: pointer;
+            appearance: none;
+            background: #555;
+            border-radius: 12px;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        .settings-toggle input[type="checkbox"]:checked {
+            background: #10b981;
+        }
+
+        .settings-toggle input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .settings-toggle input[type="checkbox"]:checked::before {
+            transform: translateX(20px);
         }
 
         .container {
@@ -514,20 +634,21 @@
             <button class="close-sidebar" onclick="toggleSidebar()">×</button>
         </div>
         
-        <ul class="sidebar-menu">
-            <li><a href="#" onclick="showSettings('appearance')" class="active">
-                <span class="menu-icon">🎨</span>
-                <span>Appearance</span>
-            </a></li>
-            <li><a href="#" onclick="showSettings('data')">
-                <span class="menu-icon">💾</span>
-                <span>Data Management</span>
-            </a></li>
-            <li><a href="#" onclick="showSettings('security')">
-                <span class="menu-icon">🔒</span>
-                <span>Security</span>
-            </a></li>
-        </ul>
+        <div class="sidebar-content">
+            <ul class="sidebar-menu">
+                <li><a href="#" onclick="showSettings('appearance')" class="active">
+                    <span class="menu-icon">A</span>
+                    <span>Appearance</span>
+                </a></li>
+                <li><a href="#" onclick="showSettings('data')">
+                    <span class="menu-icon">D</span>
+                    <span>Data Management</span>
+                </a></li>
+                <li><a href="#" onclick="showSettings('security')">
+                    <span class="menu-icon">S</span>
+                    <span>Security</span>
+                </a></li>
+            </ul>
 
         <!-- Appearance Settings -->
         <div class="settings-section" id="appearance-settings">
@@ -592,44 +713,43 @@
         <!-- Data Management Settings -->
         <div class="settings-section" id="data-settings" style="display: none;">
             <div class="settings-title">Data Management</div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="exportData()" class="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm">
-                    Export Data (CSV)
-                </button>
-                <button onclick="openImportModal()" class="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm">
-                    Import Transactions (JSON)
-                </button>
-                <button onclick="confirmResetData()" class="w-full p-2 bg-red-600 text-white rounded hover:bg-red-700 transition text-sm">
-                    Reset All Data
-                </button>
-            </div>
+            <button onclick="exportData()" class="settings-button" style="background: #3b82f6; color: white;">
+                Export Data (CSV)
+            </button>
+            <button onclick="openImportModal()" class="settings-button" style="background: #10b981; color: white;">
+                Import Transactions (JSON)
+            </button>
+            <button onclick="confirmResetData()" class="settings-button" style="background: #ef4444; color: white;">
+                Reset All Data
+            </button>
         </div>
 
         <!-- Security Settings -->
         <div class="settings-section" id="security-settings" style="display: none;">
             <div class="settings-title">Alerts & Security</div>
-            <div style="margin-bottom: 20px;">
-                <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer;">
-                    <span>Enable Budget Overrun Alerts</span>
-                    <input type="checkbox" id="budgetAlertsToggle" style="width: 20px; height: 20px;">
+            <div class="settings-toggle">
+                <label for="budgetAlertsToggle">
+                    Enable Budget Overrun Alerts
                 </label>
+                <input type="checkbox" id="budgetAlertsToggle">
             </div>
-            <div style="margin-bottom: 20px;">
-                <label style="display: flex; justify-content: space-between; align-items: center; color: white; cursor: pointer;">
-                    <span>Security Lock (PIN)</span>
-                    <input type="checkbox" id="pinLockToggle" style="width: 20px; height: 20px;">
+            <div class="settings-toggle">
+                <label for="pinLockToggle">
+                    Security Lock (PIN)
                 </label>
-                <div id="pinSetupSection" style="display: none; margin-top: 10px;">
-                    <input type="password" id="pinSetupInput" maxlength="4" placeholder="Set 4-digit PIN" class="w-full p-2 rounded" style="background: #444; color: white; border: 1px solid #666;">
-                    <button onclick="savePIN()" class="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm mt-2">Save PIN</button>
-                </div>
+                <input type="checkbox" id="pinLockToggle">
             </div>
-            <div style="margin-top: 20px;">
+            <div id="pinSetupSection" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;">
+                <input type="password" id="pinSetupInput" maxlength="4" placeholder="Set 4-digit PIN" class="w-full p-2 rounded" style="background: #444; color: white; border: 1px solid #666; margin-bottom: 10px;">
+                <button onclick="savePIN()" class="settings-button" style="background: #3b82f6; color: white;">Save PIN</button>
+            </div>
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #444;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: white; font-size: 12px;">Database Status:</span>
-                    <span id="dbStatus" class="px-2 py-1 rounded text-xs" style="background: #10b981; color: white;">Connected</span>
+                    <span style="color: #aaa; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Database Status:</span>
+                    <span id="dbStatus" class="px-2 py-1 rounded text-xs" style="background: #10b981; color: white; font-weight: 500;">Connected</span>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 
