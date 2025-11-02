@@ -1377,6 +1377,99 @@
         let currencySymbol = '$';
         let dateFormat = 'MM/DD/YYYY';
 
+        // Save preference to Supabase
+        async function savePreference(key, value) {
+            try {
+                const valueToSave = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                
+                // Check if record exists
+                const { data: existing, error: selectError } = await supabase
+                    .from('user_preferences')
+                    .select('id, key')
+                    .eq('key', key)
+                    .maybeSingle();
+
+                if (selectError && selectError.code !== 'PGRST116') {
+                    console.error(`Error checking for existing preference ${key}:`, selectError);
+                }
+
+                if (existing && existing.id) {
+                    // Update existing
+                    const { error: updateError } = await supabase
+                        .from('user_preferences')
+                        .update({ value: valueToSave, updated_at: new Date().toISOString() })
+                        .eq('key', key);
+                    
+                    if (updateError) {
+                        console.error(`Error updating preference ${key}:`, updateError);
+                        throw updateError;
+                    }
+                    console.log(`Successfully updated ${key} in Supabase`);
+                } else {
+                    // Insert new
+                    const { error: insertError } = await supabase
+                        .from('user_preferences')
+                        .insert([{ key: key, value: valueToSave }]);
+                    
+                    if (insertError) {
+                        console.error(`Error inserting preference ${key}:`, insertError);
+                        throw insertError;
+                    }
+                    console.log(`Successfully saved ${key} to Supabase`);
+                }
+            } catch (error) {
+                console.error(`Error saving preference ${key}:`, error);
+                // Fallback to localStorage
+                localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
+                showNotification(`Error saving ${key}. Check console for details.`, 'warning');
+            }
+        }
+
+        // Load all preferences from Supabase
+        async function loadAllPreferences() {
+            try {
+                const { data, error } = await supabase
+                    .from('user_preferences')
+                    .select('*');
+
+                if (error) throw error;
+
+                if (data) {
+                    data.forEach(pref => {
+                        const key = pref.key;
+                        const value = pref.value;
+
+                        try {
+                            // Try to parse as JSON, fallback to string
+                            const parsed = JSON.parse(value);
+                            if (key === 'budgets') {
+                                budgets = parsed;
+                            } else if (key === 'goals') {
+                                goals = parsed;
+                            } else {
+                                localStorage.setItem(key, JSON.stringify(parsed));
+                            }
+                        } catch {
+                            // Not JSON, store as string
+                            if (key === 'appPIN') {
+                                // PIN is handled separately for security
+                                localStorage.setItem(key, value);
+                            } else {
+                                localStorage.setItem(key, value);
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading preferences:', error);
+                // Fallback to localStorage
+                const savedBudgets = localStorage.getItem('budgets');
+                if (savedBudgets) budgets = JSON.parse(savedBudgets);
+                const savedGoals = localStorage.getItem('goals');
+                if (savedGoals) goals = JSON.parse(savedGoals);
+            }
+        }
+
         // Budget Management
         function openBudgetModal() {
             document.getElementById('budgetModal').classList.remove('hidden');
@@ -1414,8 +1507,8 @@
                 if (budgetValue) budgets[cat] = budgetValue;
             });
 
-            // Save to Supabase (would need a budgets table)
-            localStorage.setItem('budgets', JSON.stringify(budgets));
+            // Save to Supabase
+            await savePreference('budgets', budgets);
             updateBudgetDisplay();
             closeBudgetModal();
             showNotification('Budget saved successfully', 'success');
@@ -1496,7 +1589,7 @@
             document.getElementById('goalModal').classList.add('hidden');
         }
 
-        function saveGoal() {
+        async function saveGoal() {
             const name = document.getElementById('goalNameInput').value;
             const target = parseFloat(document.getElementById('goalTargetInput').value);
             const current = parseFloat(document.getElementById('goalCurrentInput').value);
@@ -1506,8 +1599,11 @@
                 return;
             }
 
-            goals.push({ id: Date.now(), name, target, current });
-            localStorage.setItem('goals', JSON.stringify(goals));
+            const newGoal = { id: Date.now(), name, target, current };
+            goals.push(newGoal);
+
+            // Save to Supabase
+            await savePreference('goals', goals);
             renderGoals();
             closeGoalModal();
             showNotification('Goal added successfully', 'success');
@@ -1539,9 +1635,9 @@
             });
         }
 
-        function deleteGoal(id) {
+        async function deleteGoal(id) {
             goals = goals.filter(g => g.id !== id);
-            localStorage.setItem('goals', JSON.stringify(goals));
+            await savePreference('goals', goals);
             renderGoals();
         }
 
@@ -1708,20 +1804,35 @@
         }
 
         // PIN Security
-        function savePIN() {
+        async function savePIN() {
             const pin = document.getElementById('pinSetupInput').value;
             if (pin.length !== 4) {
                 showNotification('PIN must be 4 digits', 'error');
                 return;
             }
-            localStorage.setItem('appPIN', pin);
+            
+            // Save to Supabase
+            await savePreference('appPIN', pin);
             showNotification('PIN saved successfully', 'success');
             document.getElementById('pinSetupSection').style.display = 'none';
         }
 
-        function unlockApp() {
+        async function unlockApp() {
             const enteredPIN = document.getElementById('pinInput').value;
-            const savedPIN = localStorage.getItem('appPIN');
+            
+            // Load PIN from Supabase
+            let savedPIN;
+            try {
+                const { data } = await supabase
+                    .from('user_preferences')
+                    .select('value')
+                    .eq('key', 'appPIN')
+                    .single();
+                savedPIN = data?.value || localStorage.getItem('appPIN');
+            } catch (error) {
+                savedPIN = localStorage.getItem('appPIN');
+            }
+            
             if (enteredPIN === savedPIN) {
                 document.getElementById('pinOverlay').classList.add('hidden');
                 document.getElementById('pinInput').value = '';
@@ -1810,27 +1921,74 @@
         const expenseTracker = new ExpenseTracker();
         loadSavedTheme();
 
-        // Load budgets and goals
-        const savedBudgets = localStorage.getItem('budgets');
-        if (savedBudgets) budgets = JSON.parse(savedBudgets);
-        const savedGoals = localStorage.getItem('goals');
-        if (savedGoals) goals = JSON.parse(savedGoals);
+        // Load all preferences from Supabase
+        loadAllPreferences().then(() => {
+            // Apply loaded preferences
+            const currency = localStorage.getItem('currency') || 'USD';
+            const dateFormatPref = localStorage.getItem('dateFormat') || 'MM/DD/YYYY';
+            const budgetAlerts = localStorage.getItem('budgetAlerts') === 'true';
+            
+            document.getElementById('currencySelect').value = currency;
+            document.querySelectorAll('input[name="dateFormat"]').forEach(radio => {
+                radio.checked = radio.value === dateFormatPref;
+            });
+            document.getElementById('budgetAlertsToggle').checked = budgetAlerts;
+
+            // Check PIN lock from Supabase
+            (async () => {
+                try {
+                    const { data } = await supabase
+                        .from('user_preferences')
+                        .select('value')
+                        .eq('key', 'appPIN')
+                        .single();
+                    if (data && data.value) {
+                        showPINLock();
+                    }
+                } catch (error) {
+                    // Fallback to localStorage
+                    if (localStorage.getItem('appPIN')) {
+                        showPINLock();
+                    }
+                }
+            })();
+
+            // Initialize displays
+            setTimeout(() => {
+                renderTransactionTable();
+                renderGoals();
+                updateBudgetDisplay();
+                expenseTracker.populateCategorySelect();
+                
+                // Populate category filter
+                const catFilter = document.getElementById('categoryFilter');
+                expenseTracker.categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    catFilter.appendChild(option);
+                });
+            }, 500);
+        });
 
         // Setup event listeners
-        document.getElementById('currencySelect').addEventListener('change', (e) => {
+        document.getElementById('currencySelect').addEventListener('change', async (e) => {
+            await savePreference('currency', e.target.value);
             localStorage.setItem('currency', e.target.value);
             renderTransactionTable();
             updateBudgetDisplay();
         });
 
         document.querySelectorAll('input[name="dateFormat"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
+            radio.addEventListener('change', async (e) => {
+                await savePreference('dateFormat', e.target.value);
                 localStorage.setItem('dateFormat', e.target.value);
                 renderTransactionTable();
             });
         });
 
-        document.getElementById('budgetAlertsToggle').addEventListener('change', (e) => {
+        document.getElementById('budgetAlertsToggle').addEventListener('change', async (e) => {
+            await savePreference('budgetAlerts', e.target.checked);
             localStorage.setItem('budgetAlerts', e.target.checked);
         });
 
@@ -1839,7 +1997,7 @@
                 document.getElementById('pinSetupSection').style.display = 'block';
             } else {
                 document.getElementById('pinSetupSection').style.display = 'none';
-                localStorage.removeItem('appPIN');
+                savePreference('appPIN', '');
             }
         });
 
@@ -1851,27 +2009,47 @@
         document.getElementById('dateRangeFilter').addEventListener('change', renderTransactionTable);
         document.getElementById('typeFilter').addEventListener('change', renderTransactionTable);
 
-        // Check PIN lock on load
-        if (localStorage.getItem('appPIN')) {
-            showPINLock();
-        }
+        // Test function - run this in console: testSupabaseConnection()
+        window.testSupabaseConnection = async function() {
+            console.log('Testing Supabase connection...');
+            try {
+                // Test insert
+                const { data: insertData, error: insertError } = await supabase
+                    .from('user_preferences')
+                    .insert([{ key: 'test_key', value: 'test_value' }])
+                    .select();
+                
+                if (insertError) {
+                    console.error('❌ Insert failed:', insertError);
+                    return false;
+                }
+                console.log('✅ Insert successful:', insertData);
 
-        // Initialize displays
-        setTimeout(() => {
-            renderTransactionTable();
-            renderGoals();
-            updateBudgetDisplay();
-            expenseTracker.populateCategorySelect();
-            
-            // Populate category filter
-            const catFilter = document.getElementById('categoryFilter');
-            expenseTracker.categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                catFilter.appendChild(option);
-            });
-        }, 1000);
+                // Test select
+                const { data: selectData, error: selectError } = await supabase
+                    .from('user_preferences')
+                    .select('*')
+                    .eq('key', 'test_key');
+                
+                if (selectError) {
+                    console.error('❌ Select failed:', selectError);
+                    return false;
+                }
+                console.log('✅ Select successful:', selectData);
+
+                // Clean up test data
+                await supabase
+                    .from('user_preferences')
+                    .delete()
+                    .eq('key', 'test_key');
+                console.log('✅ Cleanup successful');
+                console.log('🎉 Supabase connection is working!');
+                return true;
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                return false;
+            }
+        };
     </script>
 </body>
 </html>
