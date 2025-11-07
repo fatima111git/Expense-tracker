@@ -47,7 +47,6 @@
             position: fixed;
             height: 100vh;
             left: 0;
-            top: 0;
             transition: width 0.3s ease, padding 0.3s ease;
             z-index: 1000;
             overflow: hidden;
@@ -62,52 +61,37 @@
 
         .sidebar-toggle-icon {
             flex-shrink: 0;
-            height: 40px;
-            margin-bottom: 20px;
         }
 
         .sidebar-header {
             flex-shrink: 0;
-            height: auto;
-            margin-bottom: 20px;
         }
 
         .sidebar-content {
-            flex: 1;
+            flex: 1 1 auto;
             min-height: 0;
-            overflow-y: scroll;
+            overflow-y: auto;
             overflow-x: hidden;
-            padding-right: 8px;
-            padding-bottom: 20px;
+            padding-right: 5px;
             margin-top: 10px;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: #555 #1a1a1a;
-        }
-
-        .sidebar.expanded .sidebar-content {
-            height: calc(100vh - 140px);
-            max-height: calc(100vh - 140px);
         }
 
         .sidebar-content::-webkit-scrollbar {
-            width: 10px;
+            width: 6px;
         }
 
         .sidebar-content::-webkit-scrollbar-track {
             background: #1a1a1a;
-            border-radius: 5px;
-            margin: 5px 0;
+            border-radius: 3px;
         }
 
         .sidebar-content::-webkit-scrollbar-thumb {
-            background: #666;
-            border-radius: 5px;
-            border: 2px solid #1a1a1a;
+            background: #555;
+            border-radius: 3px;
         }
 
         .sidebar-content::-webkit-scrollbar-thumb:hover {
-            background: #777;
+            background: #666;
         }
 
         .sidebar-header {
@@ -783,13 +767,7 @@
     <!-- Main Content -->
     <div class="main-content" id="main-content">
         <div class="container">
-        <h1 class="text-3xl font-light mb-8 text-center flex items-center justify-center gap-3">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-            Personal Finance Dashboard
-        </h1>
+        <h1 class="text-3xl font-light mb-8 text-center">Personal Finance Dashboard</h1>
         
         <!-- Transaction Input Form -->
         <div class="input-section mb-8">
